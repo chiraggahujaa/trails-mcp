@@ -1,0 +1,8 @@
+node_modules/
+dist/
+waymarked-trails/
+*.log
+.DS_Store
+.env
+.env.*
+coverage/
