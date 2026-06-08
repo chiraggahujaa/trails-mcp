@@ -3,9 +3,11 @@
 A **multi-service MCP server** for outdoor / mapping data. Service 1 wraps the open
 [Waymarked Trails](https://waymarkedtrails.org) API (recreational routes from OpenStreetMap)
 and adds OpenStreetMap [Nominatim](https://nominatim.openstreetmap.org) geocoding so trails can
-be found by place name.
+be found by place name. Service 2 adds [Windy](https://api.windy.com/point-forecast) point
+forecasts for trail weather, marine, and air-quality planning.
 
-The server is **read-only**, needs **no API keys**, and runs locally over stdio.
+Trail search is **read-only** and needs **no API keys**. Windy forecasts require a
+**Point Forecast API key** (`WINDY_API_KEY`).
 
 ## What the AI can do
 
@@ -20,6 +22,8 @@ The server is **read-only**, needs **no API keys**, and runs locally over stdio.
 - Get a guidepost (signpost node)
 - Get a route's waymarking symbol (SVG shield)
 - Geocode any place name to coordinates
+- Get weather/marine/air-quality forecasts at any lat/lon (Windy Point Forecast API)
+- Browse all Windy models, parameters, and pressure levels with descriptions
 
 All six Waymarked Trails **flavours** are supported via a `flavour` parameter on each tool:
 `hiking` (default), `cycling`, `mtb`, `riding`, `skating`, `slopes`.
@@ -45,6 +49,8 @@ All six Waymarked Trails **flavours** are supported via a `flavour` parameter on
 | `get_guidepost` | Guidepost node detail |
 | `get_route_symbol` | Waymarking symbol SVG |
 | `geocode_place` | Place name → coordinates (Nominatim) |
+| `get_point_forecast` | Weather/marine/AQ forecast at lat/lon (Windy; requires API key) |
+| `list_forecast_options` | Catalog of Windy models, parameters, levels (no API call) |
 
 ## Install & build
 
@@ -128,8 +134,25 @@ Or, in a connected client, prompt:
 
 ## Configuration (env vars)
 
+Copy `.env.example` to `.env.dev` and set your Windy Point Forecast key (create one at
+[api.windy.com](https://api.windy.com/point-forecast)). For local dev, `npm run dev` loads
+`.env.dev` automatically. For MCP clients, pass env vars in the server config:
+
+```json
+{
+  "mcpServers": {
+    "trails": {
+      "command": "node",
+      "args": ["/path/to/trails-mcp/dist/index.js"],
+      "env": { "WINDY_API_KEY": "your_point_forecast_key" }
+    }
+  }
+}
+```
+
 | Variable | Default | Purpose |
 |---|---|---|
+| `WINDY_API_KEY` | *(unset)* | Windy **Point Forecast** API key (Map/Webcam keys do not work) |
 | `TRAILS_MCP_LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` (logs go to **stderr**) |
 | `TRAILS_MCP_USER_AGENT` | `trails-mcp/<version> (...)` | User-Agent sent to upstream APIs (Nominatim requires a descriptive one) |
 
@@ -143,6 +166,7 @@ src/
     index.ts   registerAllServices() — the single place new services plug in
     geocoding/ Nominatim client + geocode_place (shared, rate-limited)
     waymarked/ Waymarked Trails client, response shapers, and one file per tool
+    windy/     Windy Point Forecast client, parameter catalog, forecast shaping
 ```
 
 **Adding another service** = create `src/services/<name>/` with a `register()` function and add

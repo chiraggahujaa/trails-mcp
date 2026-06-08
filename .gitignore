@@ -5,4 +5,5 @@ waymarked-trails/
 .DS_Store
 .env
 .env.*
+!.env.example
 coverage/

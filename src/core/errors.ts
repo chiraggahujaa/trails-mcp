@@ -64,6 +64,13 @@ export function toToolError(err: unknown): ToolError {
         return new ToolError("not_found", upstream ?? "The requested item was not found.", {
           url: err.url,
         });
+      case 204:
+        return new ToolError(
+          "not_found",
+          upstream ??
+            "No forecast data — the model does not support any of the requested parameters.",
+          { url: err.url },
+        );
       case 429:
         return new ToolError("rate_limited", upstream ?? "Upstream rate limit hit. Try again shortly.", {
           url: err.url,

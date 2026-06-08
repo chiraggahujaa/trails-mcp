@@ -5,6 +5,7 @@
 import type { ToolRegistry } from "../core/registry.js";
 import { registerGeocoding } from "./geocoding/register.js";
 import { registerWaymarked } from "./waymarked/register.js";
+import { registerWindy } from "./windy/register.js";
 
 export function registerAllServices(registry: ToolRegistry): void {
   // Geocoding is shared infrastructure; it returns its client so route services
@@ -12,6 +13,7 @@ export function registerAllServices(registry: ToolRegistry): void {
   const { nominatim } = registerGeocoding(registry);
 
   registerWaymarked(registry, { nominatim });
+  registerWindy(registry);
 
   // Future services plug in here, e.g.:
   //   registerSomeOtherProvider(registry, { nominatim });

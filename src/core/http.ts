@@ -10,13 +10,29 @@ export interface FetchOptions {
   timeoutMs?: number;
 }
 
-async function doFetch(url: string, opts: FetchOptions, method = "GET"): Promise<Response> {
+async function doFetch(
+  url: string,
+  opts: FetchOptions,
+  method = "GET",
+  body?: unknown,
+): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
   try {
+    const headers: Record<string, string> = {
+      "user-agent": USER_AGENT,
+      accept: "*/*",
+      ...opts.headers,
+    };
+    let payload: string | undefined;
+    if (body !== undefined) {
+      headers["content-type"] = "application/json";
+      payload = JSON.stringify(body);
+    }
     return await fetch(url, {
       method,
-      headers: { "user-agent": USER_AGENT, accept: "*/*", ...opts.headers },
+      headers,
+      body: payload,
       signal: controller.signal,
     });
   } catch (err) {
@@ -59,6 +75,20 @@ export async function fetchText(url: string, opts: FetchOptions = {}): Promise<s
   const res = await doFetch(url, opts);
   if (!res.ok) throw new HttpError(res.status, url, await safeText(res));
   return res.text();
+}
+
+/** POST JSON body, parse JSON response. Throws HttpError on non-2xx (204 is ok with no body). */
+export async function fetchPostJson<T>(
+  url: string,
+  body: unknown,
+  opts: FetchOptions = {},
+): Promise<T> {
+  const res = await doFetch(url, opts, "POST", body);
+  if (res.status === 204) {
+    throw new HttpError(204, url, "No forecast data for the requested model/parameters.");
+  }
+  if (!res.ok) throw new HttpError(res.status, url, await safeText(res));
+  return (await res.json()) as T;
 }
 
 /**
